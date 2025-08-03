@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.gateway.name }}
+spec:
+  selector:
+    app: {{ .Values.gateway.name }}
+  type: LoadBalancer
+  ports:
+    - port: {{ .Values.gateway.port }}
+      targetPort: {{ .Values.gateway.port }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.gateway.name }}
+spec:
+  replicas: {{ .Values.gateway.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.gateway.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.gateway.name }}
+    spec:
+      containers:
+        - name: {{ .Values.gateway.name }}
+          image: {{ .Values.gateway.image }}
+          ports:
+            - containerPort: {{ .Values.gateway.port }}
+          imagePullPolicy: Never
+          envFrom:
+          - secretRef:
+              name: config-env-dev

@@ -1,0 +1,130 @@
+services:
+  user-db:
+    image: postgres:17.5
+    environment:
+      POSTGRES_DB: ${USER_DB_NAME}
+      POSTGRES_USER: ${USER_DB_USER}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
+    ports:
+      - "${USER_DB_LOCAL_PORT}:5432"   # unique host port
+    volumes:
+      - userdb-data:/var/lib/postgresql/data
+
+  book-db:
+    image: postgres:17.5
+    environment:
+      POSTGRES_DB: ${BOOK_DB_NAME}
+      POSTGRES_USER: ${BOOK_DB_USER}
+      POSTGRES_PASSWORD: ${BOOK_DB_PASSWORD}
+    ports:
+      - "${BOOK_DB_LOCAL_PORT}:5432"
+    volumes:
+      - bookdb-data:/var/lib/postgresql/data
+
+  rating-db:
+    image: postgres:17.5
+    environment:
+      POSTGRES_DB: ${RATING_DB_NAME}
+      POSTGRES_USER: ${RATING_DB_USER}
+      POSTGRES_PASSWORD: ${RATING_DB_PASSWORD}
+    ports:
+      - "${RATING_DB_LOCAL_PORT}:5432"
+    volumes:
+      - ratingdb-data:/var/lib/postgresql/data
+
+  recommendation-db:
+    image: postgres:17.5
+    environment:
+      POSTGRES_DB: ${RECOMMENDATION_DB_NAME}
+      POSTGRES_USER: ${RECOMMENDATION_DB_USER}
+      POSTGRES_PASSWORD: ${RECOMMENDATION_DB_PASSWORD}
+    ports:
+      - "${RECOMMENDATION_DB_LOCAL_PORT}:5432"
+    volumes:
+      - recommendationdb-data:/var/lib/postgresql/data
+      - ./services/recommendation-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  user-service:
+    build:
+      context: ./
+      dockerfile: ./services/user-service/user-service.dockerfile
+    env_file: ./config/.env.dev
+    depends_on:
+      - user-db
+      - redis
+    restart: always
+
+  book-service:
+    build:
+      context: ./
+      dockerfile: ./services/book-service/book-service.dockerfile
+    env_file: ./config/.env.dev
+    depends_on:
+      - book-db
+      - redis
+    restart: always
+
+  rating-service:
+    build:
+      context: ./
+      dockerfile: ./services/rating-service/rating-service.dockerfile
+    env_file: ./config/.env.dev
+    depends_on:
+      - rating-db
+      - redis
+    restart: always
+
+  recommendation-service:
+    build:
+      context: ./
+      dockerfile: ./services/recommendation-service/recommendation-service.dockerfile
+    env_file: ./config/.env.dev
+    depends_on:
+      - recommendation-db
+      - redis
+    restart: always
+  
+  # quote-agent-service:
+  #   build:
+  #     context: ./
+  #     dockerfile: ./services/quote-agent-service/quote-agent-service.dockerfile
+  #   env_file: ./config/.env.dev
+  #   restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: frontend.dockerfile
+    ports:
+      - "${FRONTEND_PORT}:4200"
+    restart: always
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: gateway.dockerfile
+    ports:
+      - "${GATEWAY_PORT}:8080"
+    env_file: ./config/.env.dev
+    depends_on:
+      - user-service
+      - book-service
+      - rating-service
+      - recommendation-service
+      - frontend
+
+  redis:
+    image: redis:8.2
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning", "--requirepass", "${REDIS_PASSWORD}"]
+
+volumes:
+  userdb-data:
+  bookdb-data:
+  ratingdb-data:
+  recommendationdb-data:
+  redis_data:

@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: update-recommendations
+  namespace: {{ $.Values.namespace }}
+spec:
+  schedule: {{ .Values.trainModel.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: trainer
+            image: project-healthy-reader-recommendation-service:latest
+            command: [ "python -m scripts.update_recommendations.py" ]
+            envFrom:
+            - secretRef:
+                name: config-env-dev
+            volumeMounts:
+            - name: model-storage
+              mountPath: /app/models
+          restartPolicy: OnFailure
+          volumes:
+          - name: model-storage
+            persistentVolumeClaim:
+              claimName: recommendation-model-pvc
