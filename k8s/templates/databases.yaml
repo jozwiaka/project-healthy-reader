@@ -1,0 +1,62 @@
+{{- range .Values.databases }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .name }}db-pvc
+  namespace: {{ $.Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .storage }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}-db
+  namespace: {{ $.Values.namespace }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .name }}-db
+  ports:
+    - port: {{ .port }}
+      targetPort: {{ .port }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}-db
+  namespace: {{ $.Values.namespace }}
+spec:
+  replicas: {{ .replicas }}
+  selector:
+    matchLabels:
+      app: {{ .name }}-db
+  template:
+    metadata:
+      labels:
+        app: {{ .name }}-db
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .image }}
+          env:
+            - name: POSTGRES_DB
+              value: {{ .dbName }}
+            - name: POSTGRES_USER
+              value: {{ .user }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .password }}
+          ports:
+            - containerPort: {{ .port }}
+          volumeMounts:
+            - name: {{ .name }}db-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: {{ .name }}db-storage
+          persistentVolumeClaim:
+            claimName: {{ .name }}db-pvc
+{{- end }}
