@@ -1,0 +1,40 @@
+{{- range .Values.services }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}-service
+  namespace: {{ $.Values.namespace }}
+spec:
+  selector:
+    app: {{ .name }}-service
+  type: ClusterIP
+  ports:
+    - port: {{ .port }}
+      targetPort: {{ .port }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}-service
+  namespace: {{ $.Values.namespace }}
+spec:
+  replicas: {{ .replicas }}
+  selector:
+    matchLabels:
+      app: {{ .name }}-service
+  template:
+    metadata:
+      labels:
+        app: {{ .name }}-service
+    spec:
+      containers:
+        - name: {{ .name }}-service
+          image: {{ .image }}
+          ports:
+            - containerPort: {{ .port }}
+          imagePullPolicy: Never
+          envFrom:
+            - secretRef:
+                name: config-env-dev
+{{- end }}

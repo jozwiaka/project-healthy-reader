@@ -1,0 +1,73 @@
+namespace: project-healthy-reader
+
+databases:
+- name: book
+  dbName: bookdb
+  user: book
+  password: pass
+  storage: 1Gi
+  image: postgres:17.5
+  port: 5432
+  replicas: 1
+- name: rating
+  dbName: ratingdb
+  user: rating
+  password: pass
+  storage: 1Gi
+  image: postgres:17.5
+  port: 5432
+  replicas: 1
+- name: recommendation
+  dbName: recommendationdb
+  user: recommendation
+  password: pass
+  storage: 1Gi
+  image: postgres:17.5
+  port: 5432
+  replicas: 1
+- name: user
+  dbName: userdb
+  user: user
+  password: pass
+  storage: 1Gi
+  image: postgres:17.5
+  port: 5432
+  replicas: 1
+
+services:
+- name: book
+  image: project-healthy-reader-book-service:latest
+  port: 8000
+  replicas: 1
+- name: rating
+  image: project-healthy-reader-rating-service:latest
+  port: 8000
+  replicas: 1
+- name: recommendation
+  image: project-healthy-reader-recommendation-service:latest
+  port: 8000
+  replicas: 1
+- name: user
+  image: project-healthy-reader-user-service:latest
+  port: 8000
+  replicas: 1
+
+frontend:
+  name: frontend
+  image: project-healthy-reader-frontend:latest
+  port: 4200
+  replicas: 1
+
+gateway:
+  name: gateway
+  image: project-healthy-reader-gateway:latest
+  port: 8080
+  replicas: 1
+
+ingress:
+  name: healthy-reader-ingress
+  host: healthy-reader.local
+  tlsSecret: app-tls-secret
+
+trainModel:
+  schedule: "0 2 * * *" # every day at 2AM
